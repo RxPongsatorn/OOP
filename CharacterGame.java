@@ -36,8 +36,10 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
     private boolean isShooting = false;
     public boolean youwin = false;
     public boolean newMap = false;
+    public boolean OrcDead = false;
     Knight knight = new Knight(100,100,10);
     private Orc_Berserk orcBerserk = new Orc_Berserk(0, 0, 100);
+    private Orc_Berserk orcWarrior = new Orc_Berserk(0, 0, 120);
 
     //inner class
     public class Knight{
@@ -75,13 +77,14 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
         }
         void decreaseHealth(int dmgTaken){
             this.health-=dmgTaken;
-            if(this.health<=0){
-                youwin=true;
+            if(this.health<0){
+                youwin=false;
+                OrcDead = true;
             }
         }
     }
     public class Orc_Warrior{
-        int health = 500;
+        int health = 120;
         int x;
         int y;
         public Orc_Warrior(){
@@ -122,6 +125,24 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
         // Draw the red portion representing Orc's current health
         g.setColor(Color.RED);
         g.fillRect(getWidth()-190, getHeight()/2-50, currentWidth, healthBarHeight);
+    }
+
+    public void drawOrc_WarriorHealthBar(Graphics g) {
+        Orc_Warrior orc_warrior = new Orc_Warrior();
+        int healthBarWidth = 100; // Width of the health bar
+        int healthBarHeight = 10; // Height of the health bar
+        int maxHealth = 100; // Max health value (adjust according to your game)
+        int orcHealth = orc_warrior.getHealth();
+        // Calculate the current health percentage to determine the width of the health bar
+        int currentWidth = (orcHealth * healthBarWidth) / maxHealth;
+
+        // Draw the black background of the health bar
+        g.setColor(Color.BLACK);
+        g.fillRect(getWidth()-190, getHeight()/2-150, healthBarWidth, healthBarHeight);
+
+        // Draw the red portion representing Orc's current health
+        g.setColor(Color.RED);
+        g.fillRect(getWidth()-190, getHeight()/2-150, currentWidth, healthBarHeight);
     }
 
 
@@ -177,12 +198,16 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
 
         
         drawCharacter(g);
-        drawOrcHealthBar(g);
+        
+        // drawOrcHealthBar(g);
+
+        
     }
 
     public void drawCharacter(Graphics g) {
         Image characterImage;
         Image characterOrcImage;
+        Image characterOrc2Image;
         Image arrowImage;
         Image BackgroundGames;
         Image YouwinBackground;
@@ -198,8 +223,10 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
             if(newMap){
                 BackgroundGames = backgroundImage.getImage();
                     //for orc and hitbox
-                    characterOrcImage = characterOrcFrames2[1].getImage();
+                    characterOrcImage = null;
+                    characterOrc2Image = characterOrcFrames2[1].getImage();
             }else{
+                characterOrc2Image = null;
                 BackgroundGames = backgroundImage2.getImage();
             }
             
@@ -216,12 +243,22 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
                 YouwinBackground = null;
             }
         g.drawImage(BackgroundGames, 0, 0, getWidth(), getHeight(), this);
+            // if(newMap){
+            //     drawOrc_WarriorHealthBar(g);
+            // }else{
+                
+            // }
         //for knight and hitbox
         g.drawImage(characterImage, x, y, this);
         // g.setColor(Color.RED);
         // g.drawRect(characterHitbox.x+40, characterHitbox.y+58, characterHitbox.width, characterHitbox.height);
         //for orc and hitbox
-        g.drawImage(characterOrcImage, getWidth()-200, getHeight()/2-50, this);
+        if(!OrcDead){
+            g.drawImage(characterOrcImage, getWidth()-200, getHeight()/2-50, this);
+            drawOrcHealthBar(g);
+        }
+        
+        // g.drawImage(characterOrc2Image, getWidth()-200, getHeight()/2-150, this);
         // g.setColor(Color.RED);
         // g.drawRect(getWidth()-165, getHeight()/2-15, 45, 60);
         //for arrow and hitbox
@@ -252,6 +289,7 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
                 newMap=true;
                 x=100;
                 y=100;
+                youwin = true;
             }
         } else if (key == KeyEvent.VK_A) {
             x -= deltaX; // Move character to the left
@@ -297,11 +335,22 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
             shotFrame = (shotFrame + 1) % numOfShot;
 
             Line2D arrowLine = new Line2D.Double(xArrow, yArrow + 94, xArrow + 45, yArrow + 94);
-            Rectangle orcHitbox = new Rectangle(getWidth() - 165, getHeight() / 2 - 15, 45, 60);
-            if (arrowLine.intersects(orcHitbox)) {
-                orcBerserk.decreaseHealth(10); // Reduce Orc's health when hit by the arrow
+
+            // Check hit for Orc_Berserk
+            Rectangle orcBerserkHitbox = new Rectangle(getWidth() - 165, getHeight() / 2 - 15, 45, 60);
+            if (arrowLine.intersects(orcBerserkHitbox)&&!newMap) {
+                orcBerserk.decreaseHealth(10); // Reduce Orc_Berserk's health when hit by the arrow
                 repaint(); // Redraw the screen to update the health bar
             }
+            
+            // Check hit for Orc_Warrior
+            Rectangle orcWarriorHitbox = new Rectangle(getWidth() - 165, getHeight() / 2 -15, 45, 60);
+            if (arrowLine.intersects(orcWarriorHitbox)&&newMap) {
+                orcWarrior.decreaseHealth(10);
+                
+                repaint(); // Redraw the screen to update the health bar
+            }
+            
 
             if(shotFrame==0){
                 isShooting = false;
@@ -319,5 +368,6 @@ public class CharacterGame extends JPanel implements KeyListener, ActionListener
         frame.setSize(950, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+        
     }
 }
